@@ -84,7 +84,7 @@ place.
 | `bullets($items)`                   | Prints a list.                                                                               |
 | `facts($rows)`                      | Prints ruled label and value rows.                                                           |
 | `panel($text, $tone = null)`        | Prints a quoted block that keeps its lines, in your neutral tone unless the call names one.  |
-| `action($text, $url, $tone = null)` | Prints a button with its URL below it, in the mail's tone unless the call names one.         |
+| `action($text, $url, $tone = null)` | Prints a button in the mail's tone, unless the call names one, and a line below the card with its URL. |
 | `footnote($text)`                   | Prints a note about this mail, below the card.                                               |
 | `footer($text, $url = null)`        | Prints small print every mail shares, then the site name linked to `$url` or `app.url`.      |
 
@@ -126,7 +126,7 @@ use Illuminate\Support\HtmlString;
 
 The frame follows the language the mail is rendered in: Laravel sets it from the notification's `locale()`, or from
 `preferredLocale()` on a notifiable that implements `HasLocalePreference`. An Arabic, Hebrew or Persian mail gets
-`dir="rtl"`, and fact values, panels and the URL under a button keep their own order.
+`dir="rtl"`, and fact values, panels and a button's URL keep their own order.
 
 An `Htmlable` fact or panel is marked as a whole, so keep its markup inline, with `<span>`, `<strong>` and `<br>`. A `<div>`
 puts each mark on a line of its own, which adds a blank line above and below it.
@@ -154,13 +154,21 @@ Set only the keys you change.
 | `colors.rule`    | `#e5e7eb` | The card's border and the rules between facts.                              |
 | `colors.heading` | `#111827` | The site name, the heading, fact values and panel text.                     |
 | `colors.text`    | `#374151` | The body.                                                                   |
-| `colors.muted`   | `#69717f` | Fact labels, the URL under a button, and everything below the card.         |
+| `colors.muted`   | `#69717f` | Fact labels and everything below the card.                                  |
 | `colors.link`    | `#2563eb` | Links in the body.                                                          |
 
 The logo, or the site name without one, is centred above the card in every language.
 
 Use a PNG on an opaque background for the logo: Outlook 2016 and older cannot show SVG, and a transparent PNG inverts in
 dark mode.
+
+## Translations
+
+The line below the card that gives a button's URL ships in English, French, Spanish and Arabic. To change it or add a
+language, set `trouble-clicking` in `lang/vendor/mail-frame/{locale}/email.php`. Keep the `:action` placeholder.
+
+A language with no file reads `app.fallback_locale`, and a region code such as `ar_SA` does not read `ar`. If the fallback
+has no file either, the key prints, so add one.
 
 ## Testing
 
@@ -179,6 +187,12 @@ For `$mail = (new WithdrawalSent)->toMail($user)`, `$mail->blocks` holds the bod
 tone.
 
 ## Upgrading
+
+### From 0.2
+
+The URL under a button moved below the card, into a line that says what to do with it, as Laravel's own mail does. The
+line ships in English, French, Spanish and Arabic: if you send another language, add its file (see Translations). Update
+any test of yours that pins the old markup.
 
 ### From 0.1
 

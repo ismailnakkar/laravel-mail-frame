@@ -274,9 +274,9 @@ final class FrameTest extends TestCase
         $this->assertSame('https://example.test', $message->actionUrl);
     }
 
-    public function test_the_url_under_a_button_is_a_link(): void
+    public function test_a_buttons_url_below_the_card_is_a_link(): void
     {
-        $this->assertStringContainsString('style="color:#69717f;">https://example.test/go</a>', $this->html($this->message()->action('Go', 'https://example.test/go')));
+        $this->assertStringContainsString('style="word-break:break-all; color:#69717f;">https://example.test/go</a>', $this->html($this->message()->action('Go', 'https://example.test/go')));
     }
 
     public function test_a_panel_is_neutral_whatever_the_mails_tone_unless_it_names_one(): void
@@ -361,6 +361,58 @@ final class FrameTest extends TestCase
         $this->assertSame('img/logo.png', config('mail-frame.logo'));
         $this->assertSame('#a00006', config('mail-frame.colors.link'));
         $this->assertSame('#111827', config('mail-frame.colors.heading'));
+    }
+
+    public function test_a_button_gets_a_line_below_the_card_with_its_url(): void
+    {
+        $html = $this->html($this->message()
+            ->line('Body')
+            ->action('Go & pay', 'https://example.test/go?a=1&b=2')
+            ->footnote('Note')
+            ->footer('Small', 'https://example.test/home'));
+
+        $this->assertStringContainsString('having trouble clicking the &quot;Go &amp; pay&quot; button,', $html);
+        $this->assertStringContainsString('<a href="https://example.test/go?a=1&amp;b=2" style="word-break:break-all; color:#69717f;">https://example.test/go?a=1&amp;b=2</a>', $html);
+        $this->assertLessThan(strpos($html, 'trouble clicking'), strpos($html, 'Note'), 'After the footnote.');
+        $this->assertLessThan(strpos($html, 'Small'), strpos($html, 'trouble clicking'), 'Above the footer.');
+    }
+
+    public function test_each_button_gets_its_own_line(): void
+    {
+        $html = $this->html($this->message()->action('One', 'https://example.test/1')->action('Two', 'https://example.test/2'));
+
+        $this->assertSame(2, substr_count($html, 'trouble clicking'));
+        $this->assertStringContainsString('&quot;Two&quot;', $html);
+    }
+
+    /** The button printed one before this line existed: a queued mail must not start failing here. */
+    public function test_a_null_button_label_still_renders(): void
+    {
+        $this->assertStringContainsString('https://example.test/go</a>', $this->html($this->message()->action(null, 'https://example.test/go')));
+    }
+
+    public function test_a_mail_with_no_button_has_no_such_line(): void
+    {
+        $this->assertStringNotContainsString('trouble clicking', $this->html($this->message()->line('Body')));
+    }
+
+    public function test_a_lone_button_line_shows_with_no_footnote_or_footer(): void
+    {
+        $this->assertStringContainsString('trouble clicking', $this->html($this->message()->action('Go', 'https://example.test/go')));
+    }
+
+    #[DataProvider('languages')]
+    public function test_the_line_ships_in_each_language(string $locale, string $words): void
+    {
+        $this->assertStringContainsString($words, trans('mail-frame::email.trouble-clicking', ['action' => 'Go'], $locale));
+    }
+
+    public static function languages(): iterable
+    {
+        yield 'en' => ['en', 'the "Go" button'];
+        yield 'fr' => ['fr', 'le bouton "Go"'];
+        yield 'es' => ['es', 'el botón "Go"'];
+        yield 'ar' => ['ar', 'زر "Go"،'];
     }
 
     public function test_only_the_config_can_be_published(): void

@@ -20,6 +20,7 @@ class MailFrameServiceProvider extends ServiceProvider
     public function boot(): void
     {
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'mail-frame');
+        $this->loadTranslationsFrom(__DIR__ . '/../lang', 'mail-frame');
 
         $this->publishes([__DIR__ . '/../config/mail-frame.php' => config_path('mail-frame.php')], 'mail-frame-config');
 

@@ -18,6 +18,7 @@
     $font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
     [$fsi, $pdi] = $rtl ? ["\u{2068}", "\u{2069}"] : ['', ''];
     $toneLine = "border-top:3px solid {$tone->accent()}; border-radius:13px 13px 0 0;";
+    $buttons = array_filter($blocks, static fn (array $block): bool => $block['type'] === 'action');
     $lines = static fn (mixed $value): string => $value instanceof Htmlable ? $fsi.$value->toHtml().$pdi : nl2br(Message::isolate(trim(e($value))));
 @endphp
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -106,12 +107,12 @@
                                                 @break
                                             @case('action')
                                                 @php $accent = ($block['tone'] ?? $tone)->accent(); @endphp
-                                                {{-- Link padding is the hit area; mso-padding-alt keeps it on the cell for Outlook. The bare URL covers clients that strip the link. --}}
-                                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 12px;">
+                                                {{-- Link padding is the hit area; mso-padding-alt keeps it on the cell for Outlook. --}}
+                                                <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 22px;">
                                                     <tr><td align="center" bgcolor="{{ $accent }}" style="mso-padding-alt:14px 22px; border-radius:10px; background:{{ $accent }};"><a href="{{ $block['url'] }}" style="display:inline-block; padding:14px 22px; mso-padding-alt:0; font-family:{!! $font !!}; font-size:15px; font-weight:600; line-height:1; color:#ffffff; text-decoration:none;">{{ $block['text'] }}</a></td></tr>
                                                 </table>
-                                                {{-- Marks outside the link: a marked label would differ from its URL. mail-url: the text part already has it, on the button's line. --}}
-                                                <p class="mail-url" style="margin:0 0 22px; font-size:13px; line-height:1.5; color:{{ $colors['muted'] }}; word-break:break-all;">{{ $fsi }}<a href="{{ $block['url'] }}" style="color:{{ $colors['muted'] }};">{{ $block['url'] }}</a>{{ $pdi }}</p>
+                                                {{-- Outlook ignores a table's margin. --}}
+                                                <!--[if mso]><p style="margin:0; font-size:12px; line-height:22px;">&nbsp;</p><![endif]-->
                                                 @break
                                         @endswitch
                                     @endforeach
@@ -124,12 +125,16 @@
                         </table>
                     </td>
                 </tr>
-                @if ($footnote || $footer)
+                @if ($footnote || $buttons || $footer)
                     <tr>
                         <td style="padding:22px 8px 0; font-family:{!! $font !!}; font-size:12.5px; line-height:1.6; color:{{ $colors['muted'] }};">
                             @if ($footnote)
                                 <div style="margin:0 0 8px;">{{ $footnote }}</div>
                             @endif
+                            @foreach ($buttons as $button)
+                                {{-- For clients that strip the button. Marks outside the link: a marked label would differ from its URL. mail-url: the text part has it already, on the button's line. --}}
+                                <p class="mail-url" style="margin:0 0 8px;">{{ __('mail-frame::email.trouble-clicking', ['action' => Message::isolate((string) $button['text'])]) }}<br />{{ $fsi }}<a href="{{ $button['url'] }}" style="word-break:break-all; color:{{ $colors['muted'] }};">{{ $button['url'] }}</a>{{ $pdi }}</p>
+                            @endforeach
                             @if ($footer)
                                 {{ $footer['text'] }}<br />
                                 <a href="{{ $footer['url'] }}" style="color:{{ $colors['muted'] }};">{{ $site }}</a>

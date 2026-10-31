@@ -187,6 +187,7 @@ final class PlainTextTest extends TestCase
 
             $this->assertSame(1, substr_count($text, 'https://example.test/go'), $locale);
             $this->assertStringContainsString('Go <https://example.test/go>', $text, $locale);
+            $this->assertStringNotContainsString('"Go"', $text, 'No button to have trouble clicking: the line above is the link.');
         }
     }
 

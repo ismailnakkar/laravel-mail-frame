@@ -109,6 +109,7 @@ final class DirectionTest extends TestCase
         $this->assertStringContainsString("\u{2068}<a href=\"https://example.test/go\"", $html);
         $this->assertStringContainsString("</a>\u{2069}", $html);
         $this->assertStringNotContainsString("https://example.test/go\u{2069}\"", $html);
+        $this->assertStringContainsString("&quot;\u{2068}Go\u{2069}&quot;", $html, 'A Latin label stays whole inside the Arabic line.');
     }
 
     /** Arabic letters join, so spacing them is not a matter of taste. */
