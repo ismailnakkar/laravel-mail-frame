@@ -6,7 +6,9 @@ namespace MailFrame\Tests;
 
 use Illuminate\Mail\Events\MessageSending;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\HtmlString;
 use MailFrame\Listeners\AddPlainTextPart;
+use MailFrame\Message;
 use MailFrame\Tests\Fixtures\MailTone;
 use PHPUnit\Framework\Attributes\DataProvider;
 use Symfony\Component\Mime\Email;
@@ -63,8 +65,6 @@ final class PlainTextTest extends TestCase
             Quoted
 
             Terms & Go <https://example.test/go>
-
-            https://example.test/go
 
             Thanks
             Acme
@@ -178,13 +178,32 @@ final class PlainTextTest extends TestCase
         $this->assertStringNotContainsString('color-scheme', $text);
     }
 
-    public function test_an_arabic_button_url_is_not_printed_twice(): void
+    public function test_a_button_url_prints_once(): void
+    {
+        foreach (['en', 'ar'] as $locale) {
+            app()->setLocale($locale);
+
+            $text = $this->convert($this->html($this->message()->action('Go', 'https://example.test/go')));
+
+            $this->assertSame(1, substr_count($text, 'https://example.test/go'), $locale);
+            $this->assertStringContainsString('Go <https://example.test/go>', $text, $locale);
+        }
+    }
+
+    /** A line needs no isolate of its own, and copying a whole line must not pick one up with a code. */
+    public function test_direction_marks_stay_off_the_ends_of_a_line(): void
     {
         app()->setLocale('ar');
 
-        $text = $this->convert($this->html($this->message()->action('Go', 'https://example.test/go')));
+        $text = $this->convert($this->html($this->message()
+            ->line('Hello ' . Message::isolate('sam') . ',')
+            ->line(Message::isolate('sam') . ' said')
+            ->facts(['Amount' => '$1.00'])
+            ->panel(new HtmlString('123456<br />expires'))));
 
-        $this->assertSame(2, substr_count($text, 'https://example.test/go'), 'Once for the button, once for the bare URL, and no more.');
-        $this->assertStringContainsString('Go <https://example.test/go>', $text);
+        $this->assertStringContainsString("Hello \u{2068}sam\u{2069},", $text);
+        $this->assertStringContainsString("\u{2068}sam\u{2069} said", $text);
+        $this->assertStringContainsString("\n$1.00\n", $text);
+        $this->assertStringContainsString("\n123456\nexpires\n", $text);
     }
 }

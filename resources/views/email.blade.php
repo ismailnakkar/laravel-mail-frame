@@ -54,9 +54,10 @@
             <!--[if mso]><table role="presentation" width="600" align="center" cellpadding="0" cellspacing="0" border="0"><tr><td><![endif]-->
             <table role="presentation" width="100%" align="center" cellpadding="0" cellspacing="0" border="0" style="width:100%; max-width:600px;">
                 <tr>
-                    <td align="{{ $start }}" style="padding:0 4px 18px; font-family:{!! $font !!}; font-size:17px; font-weight:700; color:{{ $colors['heading'] }};">
+                    {{-- Both: Outlook ignores display:block and centres from the cell, everything else needs the margins. --}}
+                    <td align="center" style="padding:0 4px 18px; font-family:{!! $font !!}; font-size:17px; font-weight:700; color:{{ $colors['heading'] }};">
                         @if ($logo)
-                            <img src="{{ asset($logo) }}" alt="{{ $site }}" width="{{ $logoWidth }}" style="display:block; width:{{ $logoWidth }}px; height:auto; border:0;" />
+                            <img src="{{ asset($logo) }}" alt="{{ $site }}" width="{{ $logoWidth }}" style="display:block; width:{{ $logoWidth }}px; height:auto; margin:0 auto; border:0;" />
                         @else
                             {{ $site }}
                         @endif
@@ -68,7 +69,7 @@
                             {{-- A cell border: a 3px row would scale the radius down. --}}
                             @if ($heading)
                                 <tr>
-                                    <td class="mail-pad mail-head" style="{{ $toneLine }} padding:30px 32px 0;"><h1 style="margin:0; font-family:{!! $font !!}; font-size:20px; line-height:1.35; font-weight:700; letter-spacing:-0.01em; color:{{ $colors['heading'] }};">{{ $heading }}</h1></td>
+                                    <td class="mail-pad mail-head" style="{{ $toneLine }} padding:30px 32px 0;"><h1 style="margin:0; font-family:{!! $font !!}; font-size:20px; line-height:1.35; font-weight:700; {{ $rtl ? '' : 'letter-spacing:-0.01em; ' }}color:{{ $colors['heading'] }};">{{ $heading }}</h1></td>
                                 </tr>
                             @endif
                             <tr>
@@ -109,8 +110,8 @@
                                                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 12px;">
                                                     <tr><td align="center" bgcolor="{{ $accent }}" style="mso-padding-alt:14px 22px; border-radius:10px; background:{{ $accent }};"><a href="{{ $block['url'] }}" style="display:inline-block; padding:14px 22px; mso-padding-alt:0; font-family:{!! $font !!}; font-size:15px; font-weight:600; line-height:1; color:#ffffff; text-decoration:none;">{{ $block['text'] }}</a></td></tr>
                                                 </table>
-                                                {{-- Outside the link: a marked label would differ from its URL, and the text part would print both. --}}
-                                                <p style="margin:0 0 22px; font-size:13px; line-height:1.5; color:{{ $colors['muted'] }}; word-break:break-all;">{{ $fsi }}<a href="{{ $block['url'] }}" style="color:{{ $colors['muted'] }};">{{ $block['url'] }}</a>{{ $pdi }}</p>
+                                                {{-- Marks outside the link: a marked label would differ from its URL. mail-url: the text part already has it, on the button's line. --}}
+                                                <p class="mail-url" style="margin:0 0 22px; font-size:13px; line-height:1.5; color:{{ $colors['muted'] }}; word-break:break-all;">{{ $fsi }}<a href="{{ $block['url'] }}" style="color:{{ $colors['muted'] }};">{{ $block['url'] }}</a>{{ $pdi }}</p>
                                                 @break
                                         @endswitch
                                     @endforeach

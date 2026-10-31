@@ -22,7 +22,6 @@ class MailFrameServiceProvider extends ServiceProvider
         $this->loadViewsFrom(__DIR__ . '/../resources/views', 'mail-frame');
 
         $this->publishes([__DIR__ . '/../config/mail-frame.php' => config_path('mail-frame.php')], 'mail-frame-config');
-        $this->publishes([__DIR__ . '/../resources/views' => resource_path('views/vendor/mail-frame')], 'mail-frame-views');
 
         Event::listen(MessageSending::class, AddPlainTextPart::class);
     }

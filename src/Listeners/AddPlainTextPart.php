@@ -36,9 +36,10 @@ final class AddPlainTextPart
             [
                 '#<!--(?:-?>|(?:[^-]++|-(?!->))*+(*COMMIT)-->)|<\?[^>]*+>|<(head|style|script)\b[^>]*+>(?:[^<]++|<(?!/\1>))*+</\1>#i',
                 '#<(\w+)\b(?:[^\s"\'<>]++|[\s"\'](?!style\s*=))*+[\s"\']style\s*=\s*(?:"[^"]*?|\'[^\']*?|)display:\s*none[^>]*+>(?:[^<]++|<(?!/\1>))*+</\1>#i',
+                '#<p class="mail-url"[^>]*+>(?:[^<]++|<(?!/p>))*+</p>#',
                 '#<(?![a-z/!?])#i', // strip_tags() would eat the mail after a bare "<"
             ],
-            ['', '', '&lt;'],
+            ['', '', '', '&lt;'],
             $html,
         ) ?? $html;
 
@@ -64,6 +65,9 @@ final class AddPlainTextPart
 
         // Bytes, not /u: one invalid sequence must not cost the whole part.
         $text = preg_replace(['/\r\n?/', "/\xC2\xA0/", '/[ \t]+/', '/^ | $/m', "/\n{3,}/"], ["\n", ' ', ' ', '', "\n\n"], $text) ?? $text;
+
+        // An isolate that fills its lines isolates nothing, and copying a line would pick up the mark with a code or a link.
+        $text = preg_replace("/^\xE2\x81\xA8((?:(?!\xE2\x81[\xA8\xA9]).)*+)\xE2\x81\xA9$/ms", '$1', $text) ?? $text;
 
         return trim($text) . "\n";
     }

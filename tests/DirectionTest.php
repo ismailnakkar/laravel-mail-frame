@@ -51,12 +51,12 @@ final class DirectionTest extends TestCase
 
         $arabic = $this->html($this->message()->facts(['Amount' => '$1.00'])->bullets(['One']));
 
-        $this->assertStringContainsString('<td align="left" style="padding:0 4px 18px;', $english);
+        $this->assertStringContainsString('<td align="center" style="padding:0 4px 18px;', $english);
         $this->assertMatchesRegularExpression('~<th scope="row" align="left"[^>]* text-align:left;~', $english);
         $this->assertMatchesRegularExpression('~<td align="right" style="padding:9px 0;[^>]* text-align:right;~', $english);
         $this->assertStringContainsString('margin-left:20px;', $english);
 
-        $this->assertStringContainsString('<td align="right" style="padding:0 4px 18px;', $arabic);
+        $this->assertStringContainsString('<td align="center" style="padding:0 4px 18px;', $arabic);
         $this->assertMatchesRegularExpression('~<th scope="row" align="right"[^>]* text-align:right;~', $arabic);
         $this->assertMatchesRegularExpression('~<td align="left" style="padding:9px 0;[^>]* text-align:left;~', $arabic);
         $this->assertStringContainsString('margin-right:20px;', $arabic);
@@ -109,6 +109,16 @@ final class DirectionTest extends TestCase
         $this->assertStringContainsString("\u{2068}<a href=\"https://example.test/go\"", $html);
         $this->assertStringContainsString("</a>\u{2069}", $html);
         $this->assertStringNotContainsString("https://example.test/go\u{2069}\"", $html);
+    }
+
+    /** Arabic letters join, so spacing them is not a matter of taste. */
+    public function test_a_heading_is_letter_spaced_only_left_to_right(): void
+    {
+        $this->assertStringContainsString('letter-spacing:', $this->html($this->message()->heading('Head')));
+
+        app()->setLocale('ar');
+
+        $this->assertStringNotContainsString('letter-spacing:', $this->html($this->message()->heading('Head')));
     }
 
     public function test_a_notification_sent_in_arabic_renders_in_its_language(): void

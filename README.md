@@ -128,6 +128,9 @@ The frame follows the language the mail is rendered in: Laravel sets it from the
 `preferredLocale()` on a notifiable that implements `HasLocalePreference`. An Arabic, Hebrew or Persian mail gets
 `dir="rtl"`, and fact values, panels and the URL under a button keep their own order.
 
+An `Htmlable` fact or panel is marked as a whole, so keep its markup inline, with `<span>`, `<strong>` and `<br>`. A `<div>`
+puts each mark on a line of its own, which adds a blank line above and below it.
+
 Use `Message::isolate()` for a value you put inside a right-to-left sentence, such as a name in a greeting. Call it in
 `toMail()`, where the language is set. It returns the text unchanged in a left-to-right language.
 
@@ -154,11 +157,10 @@ Set only the keys you change.
 | `colors.muted`   | `#69717f` | Fact labels, the URL under a button, and everything below the card.         |
 | `colors.link`    | `#2563eb` | Links in the body.                                                          |
 
+The logo, or the site name without one, is centred above the card in every language.
+
 Use a PNG on an opaque background for the logo: Outlook 2016 and older cannot show SVG, and a transparent PNG inverts in
 dark mode.
-
-To change the frame itself, run `php artisan vendor:publish --tag=mail-frame-views` and edit
-`resources/views/vendor/mail-frame/email.blade.php`.
 
 ## Testing
 
@@ -178,7 +180,12 @@ tone.
 
 ## Upgrading
 
-0.1.0 is the first release.
+### From 0.1
+
+The `mail-frame-views` publish tag is gone. A file at `resources/views/vendor/mail-frame/email.blade.php` still overrides
+the frame, so copy it there by hand if you need your own.
+
+The logo is centred, and the plain-text part prints a button's URL once. Update any test of yours that pins either.
 
 ## Licence
 

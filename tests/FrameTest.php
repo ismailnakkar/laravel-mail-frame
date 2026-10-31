@@ -331,7 +331,7 @@ final class FrameTest extends TestCase
     {
         config(['mail-frame.logo' => 'img/logo.png', 'mail-frame.logo_width' => 112]);
 
-        $this->assertStringContainsString('<img src="' . asset('img/logo.png') . '" alt="Acme" width="112" style="display:block; width:112px; height:auto; border:0;" />', $this->html($this->message()));
+        $this->assertStringContainsString('<img src="' . asset('img/logo.png') . '" alt="Acme" width="112" style="display:block; width:112px; height:auto; margin:0 auto; border:0;" />', $this->html($this->message()));
     }
 
     public function test_every_colour_comes_from_the_config(): void
@@ -363,9 +363,9 @@ final class FrameTest extends TestCase
         $this->assertSame('#111827', config('mail-frame.colors.heading'));
     }
 
-    public function test_the_config_and_the_view_can_be_published(): void
+    public function test_only_the_config_can_be_published(): void
     {
         $this->assertContains(config_path('mail-frame.php'), ServiceProvider::pathsToPublish(MailFrameServiceProvider::class, 'mail-frame-config'));
-        $this->assertContains(resource_path('views/vendor/mail-frame'), ServiceProvider::pathsToPublish(MailFrameServiceProvider::class, 'mail-frame-views'));
+        $this->assertSame([], ServiceProvider::pathsToPublish(MailFrameServiceProvider::class, 'mail-frame-views'));
     }
 }
