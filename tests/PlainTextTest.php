@@ -57,7 +57,6 @@ final class PlainTextTest extends TestCase
 
             Links: https://a.test
             https://b.test
-
             Amount: $1.00
 
             Quoted
@@ -204,6 +203,31 @@ final class PlainTextTest extends TestCase
         $this->assertStringContainsString("\u{2068}sam\u{2069} said", $text);
         $this->assertStringContainsString("Amount: \u{2068}$1.00\u{2069}\n", $text);
         $this->assertStringContainsString("\n123456\nexpires\n", $text);
+    }
+
+    public function test_facts_print_on_consecutive_lines_and_leave_a_gap_after_the_block(): void
+    {
+        $text = $this->convert($this->html($this->message()
+            ->facts(['One' => '1', 'Two' => '2', 'Three' => '3'])
+            ->line('After')));
+
+        $this->assertStringContainsString("One: 1\nTwo: 2\nThree: 3\n\nAfter", $text);
+    }
+
+    public function test_a_callers_own_table_keeps_its_rows_apart(): void
+    {
+        $text = $this->convert($this->html($this->message()->panel(new HtmlString(
+            '<table><tr><td>Item</td><td>$1</td></tr><tr><th>Total</th><td>$3</td></tr></table>',
+        ))));
+
+        $this->assertStringContainsString("Item\n$1\n\nTotal: $3", $text);
+    }
+
+    public function test_two_facts_blocks_stay_apart(): void
+    {
+        $text = $this->convert($this->html($this->message()->facts(['One' => '1'])->facts(['Two' => '2'])));
+
+        $this->assertStringContainsString("One: 1\n\nTwo: 2", $text);
     }
 
     public function test_a_language_and_fallback_with_no_separator_still_print_a_readable_fact(): void

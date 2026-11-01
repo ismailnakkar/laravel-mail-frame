@@ -46,11 +46,12 @@ final class AddPlainTextPart
         ) ?? $html;
 
         // A text part goes out unread, so a language with no separator gets the plain one rather than the key.
+        // scope="row" is the frame's own fact row: a caller's table keeps the gap between its rows.
         $separator = __(self::FACT_SEPARATOR);
 
         $text = preg_replace(
-            ['#\s*<li\b[^>]*+>#i', '#<br\b[^>]*+>\R?#i', '#</th>\s*+<td\b[^>]*+>#i', '#</(p|div|tr|h[1-6]|ul|ol|table|blockquote|center|dd|dt|section)>#i', '#</t[dh]>#i'],
-            ["\n- ", "\n", is_string($separator) && $separator !== self::FACT_SEPARATOR ? $separator : ': ', "\n\n", "\n"],
+            ['#\s*<li\b[^>]*+>#i', '#<br\b[^>]*+>\R?#i', '#</th>\s*+<td\b[^>]*+>#i', '#</td>\s*+</tr>\s*+(?=<tr\b[^>]*+>\s*+<th\s++scope="row")#i', '#</(p|div|tr|h[1-6]|ul|ol|table|blockquote|center|dd|dt|section)>#i', '#</t[dh]>#i'],
+            ["\n- ", "\n", is_string($separator) && $separator !== self::FACT_SEPARATOR ? $separator : ': ', "\n", "\n\n", "\n"],
             $text,
         ) ?? $text;
 
