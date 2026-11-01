@@ -10,6 +10,8 @@ use MailFrame\Tone;
 /** A listener, so no frame mail can forget its plain-text part. */
 final class AddPlainTextPart
 {
+    private const string FACT_SEPARATOR = 'mail-frame::email.fact-separator';
+
     public function handle(MessageSending $event): void
     {
         // Only a frame mail carries a Tone.
@@ -43,9 +45,12 @@ final class AddPlainTextPart
             $html,
         ) ?? $html;
 
+        // A text part goes out unread, so a language with no separator gets the plain one rather than the key.
+        $separator = __(self::FACT_SEPARATOR);
+
         $text = preg_replace(
-            ['#\s*<li\b[^>]*+>#i', '#<br\b[^>]*+>\R?#i', '#</(p|div|tr|h[1-6]|ul|ol|table|blockquote|center|dd|dt|section)>#i', '#</t[dh]>#i'],
-            ["\n- ", "\n", "\n\n", "\n"],
+            ['#\s*<li\b[^>]*+>#i', '#<br\b[^>]*+>\R?#i', '#</th>\s*+<td\b[^>]*+>#i', '#</(p|div|tr|h[1-6]|ul|ol|table|blockquote|center|dd|dt|section)>#i', '#</t[dh]>#i'],
+            ["\n- ", "\n", is_string($separator) && $separator !== self::FACT_SEPARATOR ? $separator : ': ', "\n\n", "\n"],
             $text,
         ) ?? $text;
 

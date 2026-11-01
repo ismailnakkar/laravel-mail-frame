@@ -164,11 +164,12 @@ dark mode.
 
 ## Translations
 
-The line below the card that gives a button's URL ships in English, French, Spanish and Arabic. To change it or add a
-language, set `trouble-clicking` in `lang/vendor/mail-frame/{locale}/email.php`. Keep the `:action` placeholder.
+The line below the card that gives a button's URL, and what joins a fact's label to its value in the plain-text part,
+ship in English, French, Spanish and Arabic. To change them or add a language, set `trouble-clicking` and
+`fact-separator` in `lang/vendor/mail-frame/{locale}/email.php`. Keep the `:action` placeholder.
 
 A language with no file reads `app.fallback_locale`, and a region code such as `ar_SA` does not read `ar`. If the fallback
-has no file either, the key prints, so add one.
+has no file either, the button's line prints its key, so add one; a fact falls back to `: `.
 
 ## Testing
 
@@ -187,6 +188,12 @@ For `$mail = (new WithdrawalSent)->toMail($user)`, `$mail->blocks` holds the bod
 tone.
 
 ## Upgrading
+
+### From 0.3
+
+The plain-text part prints a fact as `Amount: $1.00` on one line, not the label and value on two. The separator ships in
+English, French, Spanish and Arabic, and another language gets `: ` unless you add `fact-separator` to its file (see
+Translations). Update any test of yours that pins the old text.
 
 ### From 0.2
 

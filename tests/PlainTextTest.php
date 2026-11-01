@@ -55,12 +55,10 @@ final class PlainTextTest extends TestCase
             - one
             - two
 
-            Links
-            https://a.test
+            Links: https://a.test
             https://b.test
 
-            Amount
-            $1.00
+            Amount: $1.00
 
             Quoted
 
@@ -171,7 +169,7 @@ final class PlainTextTest extends TestCase
         $this->assertStringContainsString('HEADING-SENTINEL', $text);
         $this->assertStringContainsString('BODY-SENTINEL', $text);
         $this->assertStringContainsString('- BULLET-SENTINEL', $text);
-        $this->assertMatchesRegularExpression('~Amount\s+\$1\.0000~', $text);
+        $this->assertStringContainsString('Amount: $1.0000', $text);
         $this->assertStringContainsString('ACTION-LABEL <https://example.test/go?a=1&b=2>', $text);
         $this->assertStringNotContainsString('<a ', $text);
         $this->assertStringNotContainsString('PREHEADER-SENTINEL', $text);
@@ -204,7 +202,25 @@ final class PlainTextTest extends TestCase
 
         $this->assertStringContainsString("Hello \u{2068}sam\u{2069},", $text);
         $this->assertStringContainsString("\u{2068}sam\u{2069} said", $text);
-        $this->assertStringContainsString("\n$1.00\n", $text);
+        $this->assertStringContainsString("Amount: \u{2068}$1.00\u{2069}\n", $text);
         $this->assertStringContainsString("\n123456\nexpires\n", $text);
+    }
+
+    public function test_a_language_and_fallback_with_no_separator_still_print_a_readable_fact(): void
+    {
+        app()->setLocale('de');
+        app('translator')->setFallback('de');
+
+        $text = $this->convert($this->html($this->message()->facts(['Betrag' => '1 EUR'])));
+
+        $this->assertStringContainsString('Betrag: 1 EUR', $text);
+        $this->assertStringNotContainsString('fact-separator', $text);
+    }
+
+    public function test_a_facts_separator_follows_the_language(): void
+    {
+        app()->setLocale('fr');
+
+        $this->assertStringContainsString('Montant : 1,00 $', $this->convert($this->html($this->message()->facts(['Montant' => '1,00 $']))));
     }
 }
