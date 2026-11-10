@@ -66,7 +66,7 @@ class Message extends MailMessage
             return $this->action($line->text, $line->url);
         }
 
-        $this->blocks[] = ['type' => 'line', 'text' => $this->formatLine($line)];
+        $this->blocks[] = ['type' => BlockType::line->value, 'text' => $this->formatLine($line)];
 
         return $this;
     }
@@ -77,7 +77,7 @@ class Message extends MailMessage
         $items = array_values(array_filter($items, self::prints(...)));
 
         if ($items !== []) {
-            $this->blocks[] = ['type' => 'bullets', 'items' => $items];
+            $this->blocks[] = ['type' => BlockType::bullets->value, 'items' => $items];
         }
 
         return $this;
@@ -98,7 +98,7 @@ class Message extends MailMessage
         $rows = array_values(array_filter($rows, static fn (array $row): bool => self::prints($row['value'])));
 
         if ($rows !== []) {
-            $this->blocks[] = ['type' => 'facts', 'rows' => $rows];
+            $this->blocks[] = ['type' => BlockType::facts->value, 'rows' => $rows];
         }
 
         return $this;
@@ -108,7 +108,7 @@ class Message extends MailMessage
     public function panel(string|Htmlable|null $text, ?Tone $tone = null): static
     {
         if (self::prints($text)) {
-            $this->blocks[] = ['type' => 'panel', 'text' => $text, 'tone' => $tone ?? $this->neutral];
+            $this->blocks[] = ['type' => BlockType::panel->value, 'text' => $text, 'tone' => $tone ?? $this->neutral];
         }
 
         return $this;
@@ -117,7 +117,7 @@ class Message extends MailMessage
     /** Follows the mail's tone unless $tone is given. Also sets actionText and actionUrl, where apps read a mail's link. */
     public function action($text, $url, ?Tone $tone = null): static
     {
-        $this->blocks[] = ['type' => 'action', 'text' => $text, 'url' => $url, 'tone' => $tone];
+        $this->blocks[] = ['type' => BlockType::action->value, 'text' => $text, 'url' => $url, 'tone' => $tone];
 
         return parent::action($text, $url);
     }

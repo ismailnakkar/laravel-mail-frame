@@ -185,7 +185,7 @@ $text = Mail::mailer()->getSymfonyTransport()->messages()->sole()->getOriginalMe
 ```
 
 For `$mail = (new WithdrawalSent)->toMail($user)`, `$mail->blocks` holds the body blocks and `$mail->viewData['tone']` the
-tone.
+tone. A block's `type` is a `MailFrame\BlockType` value, such as `BlockType::action->value`.
 
 ## Upgrading
 

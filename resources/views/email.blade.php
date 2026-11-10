@@ -1,4 +1,5 @@
 @use('Illuminate\Contracts\Support\Htmlable')
+@use('MailFrame\BlockType')
 @use('MailFrame\Message')
 @php
     $preheader ??= null;
@@ -18,7 +19,7 @@
     $font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
     [$fsi, $pdi] = $rtl ? ["\u{2068}", "\u{2069}"] : ['', ''];
     $toneLine = "border-top:3px solid {$tone->accent()}; border-radius:13px 13px 0 0;";
-    $buttons = array_filter($blocks, static fn (array $block): bool => $block['type'] === 'action');
+    $buttons = array_filter($blocks, static fn (array $block): bool => BlockType::tryFrom($block['type']) === BlockType::action);
     $lines = static fn (mixed $value): string => $value instanceof Htmlable ? $fsi.$value->toHtml().$pdi : nl2br(Message::isolate(trim(e($value))));
 @endphp
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -80,18 +81,18 @@
                                     @endif
 
                                     @foreach ($blocks as $block)
-                                        @switch($block['type'])
-                                            @case('line')
+                                        @switch(BlockType::tryFrom($block['type']))
+                                            @case(BlockType::line)
                                                 <p style="margin:0 0 16px;">{{ $block['text'] }}</p>
                                                 @break
-                                            @case('bullets')
+                                            @case(BlockType::bullets)
                                                 <ul style="margin:0 0 16px; margin-{{ $start }}:20px; padding:0;">
                                                     @foreach ($block['items'] as $item)
                                                         <li style="margin:0 0 6px;">{{ $item }}</li>
                                                     @endforeach
                                                 </ul>
                                                 @break
-                                            @case('facts')
+                                            @case(BlockType::facts)
                                                 {{-- Inline: a global border-collapse loses the card's rounded corners. --}}
                                                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px; border-collapse:collapse;">
                                                     @foreach ($block['rows'] as $row)
@@ -100,12 +101,12 @@
                                                     @endforeach
                                                 </table>
                                                 @break
-                                            @case('panel')
+                                            @case(BlockType::panel)
                                                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
                                                     <tr><td style="padding:14px 18px; font-family:{!! $font !!}; background:{{ $block['tone']->tint() }}; border:1px solid {{ $block['tone']->border() }}; border-radius:10px; font-size:15px; line-height:1.55; color:{{ $colors['heading'] }};">{!! $lines($block['text']) !!}</td></tr>
                                                 </table>
                                                 @break
-                                            @case('action')
+                                            @case(BlockType::action)
                                                 @php $accent = ($block['tone'] ?? $tone)->accent(); @endphp
                                                 {{-- Link padding is the hit area; mso-padding-alt keeps it on the cell for Outlook. --}}
                                                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 22px;">
