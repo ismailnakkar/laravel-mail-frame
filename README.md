@@ -185,9 +185,14 @@ $text = Mail::mailer()->getSymfonyTransport()->messages()->sole()->getOriginalMe
 ```
 
 For `$mail = (new WithdrawalSent)->toMail($user)`, `$mail->blocks` holds the body blocks and `$mail->viewData['tone']` the
-tone. A block's `type` is a `MailFrame\BlockType` value, such as `BlockType::action->value`.
+tone. A block's `type` is a `MailFrame\BlockType` case, such as `BlockType::action`.
 
 ## Upgrading
+
+### From 0.4
+
+A block's `type` in `Message::$blocks` is the `MailFrame\BlockType` case, not its string: compare it with
+`BlockType::action`, not `'action'` or `BlockType::action->value`. Update any test of yours that reads it.
 
 ### From 0.3
 

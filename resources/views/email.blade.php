@@ -19,7 +19,7 @@
     $font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
     [$fsi, $pdi] = $rtl ? ["\u{2068}", "\u{2069}"] : ['', ''];
     $toneLine = "border-top:3px solid {$tone->accent()}; border-radius:13px 13px 0 0;";
-    $buttons = array_filter($blocks, static fn (array $block): bool => BlockType::tryFrom($block['type']) === BlockType::action);
+    $buttons = array_filter($blocks, static fn (array $block): bool => $block['type'] === BlockType::action);
     $lines = static fn (mixed $value): string => $value instanceof Htmlable ? $fsi.$value->toHtml().$pdi : nl2br(Message::isolate(trim(e($value))));
 @endphp
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -81,7 +81,7 @@
                                     @endif
 
                                     @foreach ($blocks as $block)
-                                        @switch(BlockType::tryFrom($block['type']))
+                                        @switch($block['type'])
                                             @case(BlockType::line)
                                                 <p style="margin:0 0 16px;">{{ $block['text'] }}</p>
                                                 @break

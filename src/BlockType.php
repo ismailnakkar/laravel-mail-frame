@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace MailFrame;
 
-/** What a body block in Message::$blocks prints. The block holds the value, so a test can read it as a string. */
+/** What a body block in Message::$blocks prints: the block's `type` is the case. */
 enum BlockType: string
 {
     case line = 'line';
