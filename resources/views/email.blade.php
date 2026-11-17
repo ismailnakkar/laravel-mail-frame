@@ -109,8 +109,9 @@
                                             @case(BlockType::action)
                                                 @php $accent = ($block['tone'] ?? $tone)->accent(); @endphp
                                                 {{-- Link padding is the hit area; mso-padding-alt keeps it on the cell for Outlook. --}}
+                                                {{-- The span keeps the label white in a client that paints links in the link colour over their own. --}}
                                                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 22px;">
-                                                    <tr><td align="center" bgcolor="{{ $accent }}" style="mso-padding-alt:14px 22px; border-radius:10px; background:{{ $accent }};"><a href="{{ $block['url'] }}" style="display:inline-block; padding:14px 22px; mso-padding-alt:0; font-family:{!! $font !!}; font-size:15px; font-weight:600; line-height:1; color:#ffffff; text-decoration:none;">{{ $block['text'] }}</a></td></tr>
+                                                    <tr><td align="center" bgcolor="{{ $accent }}" style="mso-padding-alt:14px 22px; border-radius:10px; background:{{ $accent }};"><a href="{{ $block['url'] }}" style="display:inline-block; padding:14px 22px; mso-padding-alt:0; font-family:{!! $font !!}; font-size:15px; font-weight:600; line-height:1; color:#ffffff; text-decoration:none;"><span style="color:#ffffff;">{{ $block['text'] }}</span></a></td></tr>
                                                 </table>
                                                 {{-- Outlook ignores a table's margin. --}}
                                                 <!--[if mso]><p style="margin:0; font-size:12px; line-height:22px;">&nbsp;</p><![endif]-->

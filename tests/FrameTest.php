@@ -261,6 +261,11 @@ final class FrameTest extends TestCase
         $this->assertStringContainsString('bgcolor="#b91c33"', $this->html($this->message()->tone(MailTone::action)->action('Go', 'https://example.test', MailTone::security)));
     }
 
+    public function test_a_buttons_label_stays_white_where_a_client_paints_links_in_the_link_colour(): void
+    {
+        $this->assertStringContainsString('color:#ffffff; text-decoration:none;"><span style="color:#ffffff;">Go</span></a>', $this->html($this->message()->action('Go', 'https://example.test')));
+    }
+
     public function test_a_button_follows_a_tone_set_after_it(): void
     {
         $this->assertStringContainsString('bgcolor="#7d5200"', $this->html($this->message()->action('Go', 'https://example.test')->tone(MailTone::action)));
