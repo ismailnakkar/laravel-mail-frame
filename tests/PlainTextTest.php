@@ -205,6 +205,30 @@ final class PlainTextTest extends TestCase
         $this->assertStringContainsString("\n123456\nexpires\n", $text);
     }
 
+    /** A panel or fact holding a value the app isolated: the line drops every pair that fills it, and keeps the rest. */
+    public function test_an_isolate_that_fills_its_line_goes_with_those_inside_it(): void
+    {
+        $fsi = "\u{2068}";
+        $pdi = "\u{2069}";
+
+        $this->assertSame("Hello {$fsi}sam{$pdi},\n", $this->convert("<p>{$fsi}Hello {$fsi}sam{$pdi},{$pdi}</p>"));
+        $this->assertSame("123456\n", $this->convert("<p>{$fsi}{$fsi}123456{$pdi}{$pdi}</p>"));
+        $this->assertSame("{$fsi}a{$pdi} {$fsi}b{$pdi}\n", $this->convert("<p>{$fsi}a{$pdi} {$fsi}b{$pdi}</p>"), 'Two side by side fill nothing.');
+        $this->assertSame("Code {$fsi}a{$pdi} now\n", $this->convert("<p>Code {$fsi}a{$pdi} now</p>"));
+        $this->assertSame("{$fsi}{$fsi}a{$pdi}\n", $this->convert("<p>{$fsi}{$fsi}a{$pdi}</p>"), 'Unbalanced: left alone.');
+
+        app()->setLocale('ar');
+
+        $text = $this->convert($this->html($this->message()
+            ->panel('Hello ' . Message::isolate('sam') . ',')
+            ->panel(Message::isolate('123456'))
+            ->facts(['Code' => Message::isolate('ABC')])));
+
+        $this->assertStringContainsString("\nHello {$fsi}sam{$pdi},\n", $text);
+        $this->assertStringContainsString("\n123456\n", $text);
+        $this->assertStringContainsString("Code: {$fsi}{$fsi}ABC{$pdi}{$pdi}\n", $text, 'Mid-line: the marks stay.');
+    }
+
     public function test_facts_print_on_consecutive_lines_and_leave_a_gap_after_the_block(): void
     {
         $text = $this->convert($this->html($this->message()

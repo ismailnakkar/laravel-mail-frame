@@ -1,5 +1,7 @@
 @use('Illuminate\Contracts\Support\Htmlable')
 @use('MailFrame\BlockType')
+@use('MailFrame\Blocks\Block')
+@use('MailFrame\Blocks\Button')
 @use('MailFrame\Message')
 @php
     $preheader ??= null;
@@ -17,9 +19,10 @@
     // Outlook reads neither align="start" nor text-align:start.
     [$start, $end] = $rtl ? ['right', 'left'] : ['left', 'right'];
     $font = "-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif";
-    [$fsi, $pdi] = $rtl ? ["\u{2068}", "\u{2069}"] : ['', ''];
+    [$fsi, $pdi] = $rtl ? [Message::FIRST_STRONG_ISOLATE, Message::POP_DIRECTIONAL_ISOLATE] : ['', ''];
+    // A cell border: a 3px row would scale the radius down.
     $toneLine = "border-top:3px solid {$tone->accent()}; border-radius:13px 13px 0 0;";
-    $buttons = array_filter($blocks, static fn (array $block): bool => $block['type'] === BlockType::action);
+    $buttons = array_filter($blocks, static fn (Block $block): bool => $block instanceof Button);
     $lines = static fn (mixed $value): string => $value instanceof Htmlable ? $fsi.$value->toHtml().$pdi : nl2br(Message::isolate(trim(e($value))));
 @endphp
 <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
@@ -68,7 +71,6 @@
                 <tr>
                     <td style="background:#ffffff; border:1px solid {{ $colors['rule'] }}; border-radius:14px;">
                         <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-                            {{-- A cell border: a 3px row would scale the radius down. --}}
                             @if ($heading)
                                 <tr>
                                     <td class="mail-pad mail-head" style="{{ $toneLine }} padding:30px 32px 0;"><h1 style="margin:0; font-family:{!! $font !!}; font-size:20px; line-height:1.35; font-weight:700; {{ $rtl ? '' : 'letter-spacing:-0.01em; ' }}color:{{ $colors['heading'] }};">{{ $heading }}</h1></td>
@@ -81,13 +83,13 @@
                                     @endif
 
                                     @foreach ($blocks as $block)
-                                        @switch($block['type'])
+                                        @switch($block->type)
                                             @case(BlockType::line)
-                                                <p style="margin:0 0 16px;">{{ $block['text'] }}</p>
+                                                <p style="margin:0 0 16px;">{{ $block->text }}</p>
                                                 @break
                                             @case(BlockType::bullets)
                                                 <ul style="margin:0 0 16px; margin-{{ $start }}:20px; padding:0;">
-                                                    @foreach ($block['items'] as $item)
+                                                    @foreach ($block->items as $item)
                                                         <li style="margin:0 0 6px;">{{ $item }}</li>
                                                     @endforeach
                                                 </ul>
@@ -95,23 +97,23 @@
                                             @case(BlockType::facts)
                                                 {{-- Inline: a global border-collapse loses the card's rounded corners. --}}
                                                 <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px; border-collapse:collapse;">
-                                                    @foreach ($block['rows'] as $row)
+                                                    @foreach ($block->rows as $row)
                                                         @php $rule = "border-top:1px solid {$colors['rule']};".($loop->last ? " border-bottom:1px solid {$colors['rule']};" : ''); @endphp
-                                                        <tr><th scope="row" align="{{ $start }}" style="width:40%; padding:9px 0; font-family:{!! $font !!}; font-size:15px; line-height:1.65; {{ $rule }} font-weight:400; text-align:{{ $start }}; color:{{ $colors['muted'] }};">{{ $row['label'] }}</th><td align="{{ $end }}" style="padding:9px 0; font-family:{!! $font !!}; font-size:15px; line-height:1.65; {{ $rule }} font-weight:600; text-align:{{ $end }}; color:{{ $colors['heading'] }}; font-variant-numeric:tabular-nums;">{!! $lines($row['value']) !!}</td></tr>
+                                                        <tr><th scope="row" align="{{ $start }}" style="width:40%; padding:9px 0; font-family:{!! $font !!}; font-size:15px; line-height:1.65; {{ $rule }} font-weight:400; text-align:{{ $start }}; color:{{ $colors['muted'] }};">{{ $row->label }}</th><td align="{{ $end }}" style="padding:9px 0; font-family:{!! $font !!}; font-size:15px; line-height:1.65; {{ $rule }} font-weight:600; text-align:{{ $end }}; color:{{ $colors['heading'] }}; font-variant-numeric:tabular-nums;">{!! $lines($row->value) !!}</td></tr>
                                                     @endforeach
                                                 </table>
                                                 @break
                                             @case(BlockType::panel)
                                                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0" style="margin:0 0 20px;">
-                                                    <tr><td style="padding:14px 18px; font-family:{!! $font !!}; background:{{ $block['tone']->tint() }}; border:1px solid {{ $block['tone']->border() }}; border-radius:10px; font-size:15px; line-height:1.55; color:{{ $colors['heading'] }};">{!! $lines($block['text']) !!}</td></tr>
+                                                    <tr><td style="padding:14px 18px; font-family:{!! $font !!}; background:{{ $block->tone->tint() }}; border:1px solid {{ $block->tone->border() }}; border-radius:10px; font-size:15px; line-height:1.55; color:{{ $colors['heading'] }};">{!! $lines($block->text) !!}</td></tr>
                                                 </table>
                                                 @break
                                             @case(BlockType::action)
-                                                @php $accent = ($block['tone'] ?? $tone)->accent(); @endphp
+                                                @php $accent = ($block->tone ?? $tone)->accent(); @endphp
                                                 {{-- Link padding is the hit area; mso-padding-alt keeps it on the cell for Outlook. --}}
                                                 {{-- The span keeps the label white in a client that paints links in the link colour over their own. --}}
                                                 <table role="presentation" cellpadding="0" cellspacing="0" border="0" style="margin:4px 0 22px;">
-                                                    <tr><td align="center" bgcolor="{{ $accent }}" style="mso-padding-alt:14px 22px; border-radius:10px; background:{{ $accent }};"><a href="{{ $block['url'] }}" style="display:inline-block; padding:14px 22px; mso-padding-alt:0; font-family:{!! $font !!}; font-size:15px; font-weight:600; line-height:1; color:#ffffff; text-decoration:none;"><span style="color:#ffffff;">{{ $block['text'] }}</span></a></td></tr>
+                                                    <tr><td align="center" bgcolor="{{ $accent }}" style="mso-padding-alt:14px 22px; border-radius:10px; background:{{ $accent }};"><a href="{{ $block->url }}" style="display:inline-block; padding:14px 22px; mso-padding-alt:0; font-family:{!! $font !!}; font-size:15px; font-weight:600; line-height:1; color:#ffffff; text-decoration:none;"><span style="color:#ffffff;">{{ $block->text }}</span></a></td></tr>
                                                 </table>
                                                 {{-- Outlook ignores a table's margin. --}}
                                                 <!--[if mso]><p style="margin:0; font-size:12px; line-height:22px;">&nbsp;</p><![endif]-->
@@ -134,8 +136,8 @@
                                 <div style="margin:0 0 8px;">{{ $footnote }}</div>
                             @endif
                             @foreach ($buttons as $button)
-                                {{-- For clients that strip the button. Marks outside the link: a marked label would differ from its URL. mail-url: the text part has it already, on the button's line. --}}
-                                <p class="mail-url" style="margin:0 0 8px;">{{ __('mail-frame::email.trouble-clicking', ['action' => Message::isolate((string) $button['text'])]) }}<br />{{ $fsi }}<a href="{{ $button['url'] }}" style="word-break:break-all; color:{{ $colors['muted'] }};">{{ $button['url'] }}</a>{{ $pdi }}</p>
+                                {{-- For clients that strip the button. Marks outside the link, so its label stays its URL. The text part drops mail-url: it has the URL on the button's line. --}}
+                                <p class="mail-url" style="margin:0 0 8px;">{{ __('mail-frame::email.trouble-clicking', ['action' => Message::isolate((string) $button->text)]) }}<br />{{ $fsi }}<a href="{{ $button->url }}" style="word-break:break-all; color:{{ $colors['muted'] }};">{{ $button->url }}</a>{{ $pdi }}</p>
                             @endforeach
                             @if ($footer)
                                 {{ $footer['text'] }}<br />

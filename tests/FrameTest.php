@@ -9,6 +9,13 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Queue\WorkerStopReason;
 use Illuminate\Support\HtmlString;
 use Illuminate\Support\ServiceProvider;
+use MailFrame\Blocks\Bullets;
+use MailFrame\Blocks\Button;
+use MailFrame\Blocks\Fact;
+use MailFrame\Blocks\Facts;
+use MailFrame\Blocks\Line;
+use MailFrame\Blocks\Panel;
+use MailFrame\BlockType;
 use MailFrame\MailFrameServiceProvider;
 use MailFrame\Tests\Fixtures\MailTone;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -171,8 +178,8 @@ final class FrameTest extends TestCase
     {
         $message = $this->message()->facts(['A' => null, 'B' => '', 'C' => '0', 'D' => 0]);
 
-        $this->assertSame(['C', 'D'], array_column($message->blocks[0]['rows'], 'label'));
-        $this->assertSame([['label' => 'Z', 'value' => 0]], $this->message()->facts([['label' => 'Y', 'value' => null], ['label' => 'Z', 'value' => 0]])->blocks[0]['rows']);
+        $this->assertSame(['C', 'D'], array_column($message->blocks[0]->rows, 'label'));
+        $this->assertSame([['label' => 'Z', 'value' => 0]], array_map(get_object_vars(...), $this->message()->facts([['label' => 'Y', 'value' => null], ['label' => 'Z', 'value' => 0]])->blocks[0]->rows));
     }
 
     public function test_a_block_with_nothing_to_print_adds_nothing(): void
@@ -183,7 +190,7 @@ final class FrameTest extends TestCase
             ->panel('')->panel(null)->panel("\n ")->panel(new HtmlString(''));
 
         $this->assertSame([], $message->blocks);
-        $this->assertSame(['x'], $this->message()->bullets(['', 'x'])->blocks[0]['items']);
+        $this->assertSame(['x'], $this->message()->bullets(['', 'x'])->blocks[0]->items);
     }
 
     public function test_a_fact_value_prints_as_blade_prints_it(): void
@@ -199,7 +206,34 @@ final class FrameTest extends TestCase
     {
         $message = $this->message()->facts(['A' => null, 'B' => '1', ['label' => 'C', 'value' => '2']]);
 
-        $this->assertSame(['B', 'C'], array_column($message->blocks[0]['rows'], 'label'));
+        $this->assertSame(['B', 'C'], array_column($message->blocks[0]->rows, 'label'));
+    }
+
+    public function test_each_block_is_a_value_object_in_call_order(): void
+    {
+        $message = $this->message()
+            ->line('One')
+            ->bullets(['Two', null])
+            ->facts(['Three' => '3', '2024' => 'Year'])
+            ->panel('Four')
+            ->panel('Five', MailTone::action)
+            ->action('Six', 'https://example.test/6');
+
+        $this->assertEquals([
+            new Line('One'),
+            new Bullets(['Two']),
+            new Facts([new Fact('Three', '3'), new Fact('2024', 'Year')]),
+            new Panel('Four', MailTone::routine),
+            new Panel('Five', MailTone::action),
+            new Button('Six', 'https://example.test/6', null),
+        ], $message->blocks);
+        $this->assertSame(
+            [BlockType::line, BlockType::bullets, BlockType::facts, BlockType::panel, BlockType::panel, BlockType::action],
+            array_column($message->blocks, 'type'),
+        );
+        $this->assertSame(['type' => BlockType::action, 'text' => 'Six', 'url' => 'https://example.test/6', 'tone' => null], get_object_vars($message->blocks[5]));
+        $this->assertSame('2024', $message->blocks[2]->rows[1]->label, 'A numeric key is still a label.');
+        $this->assertSame(['Three' => '3', '2024' => 'Year'], array_column($message->blocks[2]->rows, 'value', 'label'));
     }
 
     public function test_a_list_of_bare_values_fails_loudly(): void

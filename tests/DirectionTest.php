@@ -85,7 +85,7 @@ final class DirectionTest extends TestCase
 
         $message = $this->message()->facts(['Links' => "https://a.test\nhttps://b.test", 'Number' => 42]);
 
-        $this->assertSame("https://a.test\nhttps://b.test", $message->blocks[0]['rows'][0]['value']);
+        $this->assertSame("https://a.test\nhttps://b.test", $message->blocks[0]->rows[0]->value);
         $this->assertStringContainsString("\u{2068}https://a.test\u{2069}<br />\n\u{2068}https://b.test\u{2069}", $this->html($message));
         $this->assertStringContainsString("\u{2068}42\u{2069}", $this->html($message));
     }

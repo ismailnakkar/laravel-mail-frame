@@ -75,27 +75,29 @@ public function toMail(object $notifiable): Message
 `line()`, `bullets()`, `facts()`, `panel()` and `action()` print in the order you call them; everything else has a fixed
 place.
 
-| Method                              | Does                                                                                         |
-|-------------------------------------|----------------------------------------------------------------------------------------------|
-| `tone($tone)`                       | Colours the line across the card and the buttons.                                            |
-| `preheader($text)`                  | Sets the line a client shows after the subject. Unset, it scrapes the body.                  |
-| `heading($text)`                    | Prints the title of the card.                                                                |
-| `line($text)`                       | Prints a paragraph.                                                                          |
-| `bullets($items)`                   | Prints a list.                                                                               |
-| `facts($rows)`                      | Prints ruled label and value rows.                                                           |
-| `panel($text, $tone = null)`        | Prints a quoted block that keeps its lines, in your neutral tone unless the call names one.  |
-| `action($text, $url, $tone = null)` | Prints a button in the mail's tone, unless the call names one, and a line below the card with its URL. |
-| `footnote($text)`                   | Prints a note about this mail, below the card.                                               |
-| `footer($text, $url = null)`        | Prints small print every mail shares, then the site name linked to `$url` or `app.url`.      |
+| Method                                    | Does                                                                                        |
+|-------------------------------------------|---------------------------------------------------------------------------------------------|
+| `tone($tone)`                             | Colours the line across the card and the buttons.                                           |
+| `preheader($text)`                        | Sets the line a client shows after the subject. Unset, it scrapes the body.                 |
+| `heading($text)`                          | Prints the title of the card.                                                               |
+| `greeting($text)`                         | Prints the opening line. Unset, nothing.                                                    |
+| `line($text)`                             | Prints a paragraph. `lines()`, `lineIf()` and `linesIf()` work too.                         |
+| `bullets($items)`                         | Prints a list.                                                                              |
+| `facts($rows)`                            | Prints ruled label and value rows.                                                          |
+| `panel($text, $tone = null)`              | Prints a quoted block that keeps its lines, in your neutral tone unless the call names one. |
+| `action($text, $url, $tone = null)`       | Prints a button in the mail's tone unless the call names one, and its URL below the card.   |
+| `salutation($text, $signature = null)`    | Signs off, then signs with `$signature` or `config('app.name')`. Unset, nothing.            |
+| `footnote($text)`                         | Prints a note about this mail, below the card.                                              |
+| `footer($text, $url = null)`              | Prints small print every mail shares, then the site name linked to `$url` or `app.url`.     |
 
 `facts()` takes a map, or a list of `['label' => …, 'value' => …]` rows when two share a label. A value prints as Blade
 would print it and keeps its lines. `facts()`, `bullets()` and `panel()` drop whatever prints nothing, so a conditional
 value needs no branch.
 
-The rest of `MailMessage` works, except what picks its template or colour: `level()`, `error()`, `success()`, `theme()`
-and `template()` do nothing, so use `tone()`, and `markdown()` and `view()` leave the frame behind, blocks included.
-Unset, `greeting()` and `salutation()` print nothing. `salutation()` signs with `config('app.name')` on the line below;
-`salutation('Thanks', 'The Acme Team')` signs with other words.
+The rest of `MailMessage` works: `subject()`, `from()`, `replyTo()`, `attach()` and so on. `text()` adds your own text
+view and keeps the frame. What picks Laravel's template or colour does nothing (`level()`, `error()`, `success()`,
+`theme()`, `template()`), so use `tone()`. `markdown()`, or `view()` with another view, leaves the frame behind, blocks
+included.
 
 Most sites want one subclass that sets the footer and the tone, so a notification only says what is new:
 
@@ -162,6 +164,9 @@ The logo, or the site name without one, is centred above the card in every langu
 Use a PNG on an opaque background for the logo: Outlook 2016 and older cannot show SVG, and a transparent PNG inverts in
 dark mode.
 
+To change the markup itself, copy the view to `resources/views/vendor/mail-frame/email.blade.php`. You then own it: a
+package update no longer reaches it.
+
 ## Translations
 
 The line below the card that gives a button's URL, and what joins a fact's label to its value in the plain-text part,
@@ -170,6 +175,19 @@ ship in English, French, Spanish and Arabic. To change them or add a language, s
 
 A language with no file reads `app.fallback_locale`, and a region code such as `ar_SA` does not read `ar`. If the fallback
 has no file either, the button's line prints its key, so add one; a fact falls back to `: `.
+
+## API
+
+- `MailFrame\Message`: the builder above, a `MailMessage`. `Message::isolate(string $text): string` marks a value for
+  right-to-left copy with `Message::FIRST_STRONG_ISOLATE` and `Message::POP_DIRECTIONAL_ISOLATE`, the marks the view
+  uses too, and `$message->blocks` lists the body blocks in call order.
+- `MailFrame\Tone`: the interface your tones implement: `accent()`, `tint()` and `border()`, each a hex colour.
+- `MailFrame\Blocks\Block`: the interface of a body block, one readonly class per type (see Testing). Its `type` is a
+  `MailFrame\BlockType` case: `line`, `bullets`, `facts`, `panel` or `action`.
+- The view `mail-frame::email`, the config file `mail-frame` (publish tag `mail-frame-config`) and the translation file
+  `mail-frame::email`.
+
+Anything else, such as the listener that makes the text part, is internal and may change in any release.
 
 ## Testing
 
@@ -184,10 +202,38 @@ $user->notify(new WithdrawalSent);
 $text = Mail::mailer()->getSymfonyTransport()->messages()->sole()->getOriginalMessage()->getTextBody();
 ```
 
-For `$mail = (new WithdrawalSent)->toMail($user)`, `$mail->blocks` holds the body blocks and `$mail->viewData['tone']` the
-tone. A block's `type` is a `MailFrame\BlockType` case, such as `BlockType::action`.
+For `$mail = (new WithdrawalSent)->toMail($user)`, `$mail->viewData` holds the `tone` and, once set, the `heading`,
+`preheader` and `footnote`, and `$mail->blocks` the body blocks: one readonly object each, from `MailFrame\Blocks`.
+
+| Class     | `type`               | Other properties                                            |
+|-----------|----------------------|-------------------------------------------------------------|
+| `Line`    | `BlockType::line`    | `text`                                                      |
+| `Bullets` | `BlockType::bullets` | `items`                                                     |
+| `Facts`   | `BlockType::facts`   | `rows`, a list of `Fact`, each with a `label` and a `value` |
+| `Panel`   | `BlockType::panel`   | `text`, `tone`                                              |
+| `Button`  | `BlockType::action`  | `text`, `url`, `tone` (`null` follows the mail's)           |
+
+```php
+$this->assertSame([BlockType::line, BlockType::facts, BlockType::action], array_column($mail->blocks, 'type'));
+$this->assertSame(['type' => BlockType::line, 'text' => 'We have sent your money.'], get_object_vars($mail->blocks[0]));
+$this->assertSame('$40.00', array_column($mail->blocks[1]->rows, 'value', 'label')['Amount']);
+```
 
 ## Upgrading
+
+### From 0.5
+
+`Message::$blocks` holds readonly objects from `MailFrame\Blocks` (see Testing), not arrays. Read `$block->text`, not
+`$block['text']`, and the same for `items`, `rows`, `url` and `tone`; a fact row is a `Fact`, so `$row->label` and
+`$row->value`. `type` is still the `BlockType` case, as a property, so `array_column($mail->blocks, 'type')`,
+`array_column($facts->rows, 'value', 'label')` and a collection's `where()` and `pluck()` keep working. A closure typed
+`fn (array $block)` throws a `TypeError` now: type it `MailFrame\Blocks\Block`. A test that compared blocks or fact rows
+with arrays keeps its arrays and compares `array_map(get_object_vars(...), $mail->blocks)`, or the same over `->rows`:
+`type` comes first, as its key did. In that list a facts block's `rows` stay `Fact` objects, so compare them apart, over
+`->rows`. A fact whose label was a numeric map key, such as `'2024'`, keeps it as a string, not the int PHP made of it.
+A fact's label is a string or an `Htmlable`, and a button's label a string or `null` and its URL a string: anything else
+throws a `TypeError` where it used to print. If you copied the view to `resources/views/vendor/mail-frame`, make the
+same changes there.
 
 ### From 0.4
 

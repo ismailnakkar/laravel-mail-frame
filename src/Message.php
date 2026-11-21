@@ -8,11 +8,25 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Notifications\Action;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Arr;
+use MailFrame\Blocks\Bullets;
+use MailFrame\Blocks\Button;
+use MailFrame\Blocks\Fact;
+use MailFrame\Blocks\Facts;
+use MailFrame\Blocks\Line;
+use MailFrame\Blocks\Panel;
 
 /** Blocks print in call order, which intro and outro lines cannot do. A string is text; owned markup is an Htmlable. */
 class Message extends MailMessage
 {
-    /** @var list<array<string, mixed>> */
+    public const string FIRST_STRONG_ISOLATE = "\u{2068}";
+
+    public const string POP_DIRECTIONAL_ISOLATE = "\u{2069}";
+
+    /**
+     * The block classes rather than their interface, so a caller reads a block's own properties with no instanceof.
+     *
+     * @var list<Line|Bullets|Facts|Panel|Button>
+     */
     public array $blocks = [];
 
     /** @param  Tone  $neutral  the default for tone() and every panel */
@@ -56,7 +70,7 @@ class Message extends MailMessage
     }
 
     /**
-     * line(), lines() and lineIf() all land here.
+     * line(), lines(), lineIf() and linesIf() all land here.
      *
      * @param  string|array<string>|Htmlable|Action  $line
      */
@@ -66,7 +80,7 @@ class Message extends MailMessage
             return $this->action($line->text, $line->url);
         }
 
-        $this->blocks[] = ['type' => BlockType::line, 'text' => $this->formatLine($line)];
+        $this->blocks[] = new Line($this->formatLine($line));
 
         return $this;
     }
@@ -77,7 +91,7 @@ class Message extends MailMessage
         $items = array_values(array_filter($items, self::prints(...)));
 
         if ($items !== []) {
-            $this->blocks[] = ['type' => BlockType::bullets, 'items' => $items];
+            $this->blocks[] = new Bullets($items);
         }
 
         return $this;
@@ -92,13 +106,15 @@ class Message extends MailMessage
     public function facts(array $rows): static
     {
         if (! array_is_list($rows)) {
-            $rows = Arr::map($rows, static fn (mixed $value, int|string $label): array => is_array($value) ? $value : ['label' => $label, 'value' => $value]);
+            // (string): PHP turns a numeric key such as '2024' into an int.
+            $rows = Arr::map($rows, static fn (mixed $value, int|string $label): array => is_array($value) ? $value : ['label' => (string)$label, 'value' => $value]);
         }
 
-        $rows = array_values(array_filter($rows, static fn (array $row): bool => self::prints($row['value'])));
+        $facts = array_map(static fn (array $row): Fact => new Fact($row['label'], $row['value']), $rows);
+        $facts = array_values(array_filter($facts, static fn (Fact $fact): bool => self::prints($fact->value)));
 
-        if ($rows !== []) {
-            $this->blocks[] = ['type' => BlockType::facts, 'rows' => $rows];
+        if ($facts !== []) {
+            $this->blocks[] = new Facts($facts);
         }
 
         return $this;
@@ -108,7 +124,7 @@ class Message extends MailMessage
     public function panel(string|Htmlable|null $text, ?Tone $tone = null): static
     {
         if (self::prints($text)) {
-            $this->blocks[] = ['type' => BlockType::panel, 'text' => $text, 'tone' => $tone ?? $this->neutral];
+            $this->blocks[] = new Panel($text, $tone ?? $this->neutral);
         }
 
         return $this;
@@ -117,7 +133,7 @@ class Message extends MailMessage
     /** Follows the mail's tone unless $tone is given. Also sets actionText and actionUrl, where apps read a mail's link. */
     public function action($text, $url, ?Tone $tone = null): static
     {
-        $this->blocks[] = ['type' => BlockType::action, 'text' => $text, 'url' => $url, 'tone' => $tone];
+        $this->blocks[] = new Button($text, $url, $tone);
 
         return parent::action($text, $url);
     }
@@ -161,9 +177,13 @@ class Message extends MailMessage
             return $text;
         }
 
-        return "\u{2068}" . preg_replace('/\r\n?|\n/', "\u{2069}\n\u{2068}", $text) . "\u{2069}";
+        $start = self::FIRST_STRONG_ISOLATE;
+        $end = self::POP_DIRECTIONAL_ISOLATE;
+
+        return $start . preg_replace('/\r\n?|\n/', "{$end}\n{$start}", $text) . $end;
     }
 
+    /** @phpstan-assert-if-true !null $value */
     private static function prints(mixed $value): bool
     {
         return trim(e($value)) !== '';

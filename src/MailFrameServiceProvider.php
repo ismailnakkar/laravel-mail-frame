@@ -10,7 +10,7 @@ use Illuminate\Support\ServiceProvider;
 use MailFrame\Listeners\AddPlainTextPart;
 
 /** @internal */
-class MailFrameServiceProvider extends ServiceProvider
+final class MailFrameServiceProvider extends ServiceProvider
 {
     public function register(): void
     {
