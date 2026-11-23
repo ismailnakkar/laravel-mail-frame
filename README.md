@@ -89,6 +89,7 @@ place.
 | `salutation($text, $signature = null)`    | Signs off, then signs with `$signature` or `config('app.name')`. Unset, nothing.            |
 | `footnote($text)`                         | Prints a note about this mail, below the card.                                              |
 | `footer($text, $url = null)`              | Prints small print every mail shares, then the site name linked to `$url` or `app.url`.     |
+| `content($content)`                       | Lays out a package's mail (see Package mail).                                               |
 
 `facts()` takes a map, or a list of `['label' => …, 'value' => …]` rows when two share a label. A value prints as Blade
 would print it and keeps its lines. `facts()`, `bullets()` and `panel()` drop whatever prints nothing, so a conditional
@@ -112,6 +113,33 @@ class SiteMail extends Message
     }
 }
 ```
+
+## Package mail
+
+A package that sends mail through [laravel-mail-content](https://github.com/ismailnakkar/laravel-mail-content) hands
+your template a `MailContent\Content`. `content()` lays it out, so one template serves every package:
+
+```php
+use Illuminate\Notifications\Messages\MailMessage;
+use MailContent\Content;
+use MailContent\Template;
+
+final class SiteTemplate implements Template
+{
+    public function build(Content $content, object $notifiable): MailMessage
+    {
+        return new SiteMail()
+            ->tone($content->error ? MailTone::security : MailTone::routine)
+            ->content($content);
+    }
+}
+```
+
+Name it in each package's `notifications.template` config. `content()` sets the subject and heading, the preheader and
+greeting when the content has them, then prints each block in order: a `Line` with `line()`, `Bullets` with
+`bullets()`, `Facts` with `facts()`, a `Panel` and a `Code` with `panel()`, `Links` as `bullets()` of links, and a
+`Button` with `action()`. A block type newer than this release prints its `lines()`, each with `line()`. It leaves the
+tone alone, so set it as above. To word your own greeting, call `greeting()` after `content()`.
 
 ## Escaping
 
@@ -181,6 +209,7 @@ has no file either, the button's line prints its key, so add one; a fact falls b
 - `MailFrame\Message`: the builder above, a `MailMessage`. `Message::isolate(string $text): string` marks a value for
   right-to-left copy with `Message::FIRST_STRONG_ISOLATE` and `Message::POP_DIRECTIONAL_ISOLATE`, the marks the view
   uses too, and `$message->blocks` lists the body blocks in call order.
+- `Message::content(MailContent\Content $content): static` lays out a package's mail (see Package mail).
 - `MailFrame\Tone`: the interface your tones implement: `accent()`, `tint()` and `border()`, each a hex colour.
 - `MailFrame\Blocks\Block`: the interface of a body block, one readonly class per type (see Testing). Its `type` is a
   `MailFrame\BlockType` case: `line`, `bullets`, `facts`, `panel` or `action`.
@@ -220,6 +249,11 @@ $this->assertSame('$40.00', array_column($mail->blocks[1]->rows, 'value', 'label
 ```
 
 ## Upgrading
+
+### From 0.6
+
+0.7 requires `ismailnakkar/laravel-mail-content` `^1.0`, which Composer installs with it. Nothing else changes: add
+`content()` to your template when a package you use sends its mail through laravel-mail-content.
 
 ### From 0.5
 

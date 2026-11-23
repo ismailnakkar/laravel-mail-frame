@@ -8,6 +8,9 @@ use Illuminate\Contracts\Support\Htmlable;
 use Illuminate\Notifications\Action;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Support\Arr;
+use Illuminate\Support\HtmlString;
+use MailContent\Blocks as ContentBlocks;
+use MailContent\Content;
 use MailFrame\Blocks\Bullets;
 use MailFrame\Blocks\Button;
 use MailFrame\Blocks\Fact;
@@ -161,6 +164,40 @@ class Message extends MailMessage
         return $this;
     }
 
+    /**
+     * A package's mail: its subject, heading, preheader and greeting when it has them, then its blocks in order, a block
+     * with no layout here as its lines(). The tone stays yours, so set it with tone(); call greeting() after this to word
+     * your own.
+     */
+    public function content(Content $content): static
+    {
+        $this->subject($content->subject)->heading($content->heading);
+
+        if ($content->preheader !== null) {
+            $this->preheader($content->preheader);
+        }
+
+        if ($content->greeting !== null) {
+            $this->greeting($content->greeting);
+        }
+
+        foreach ($content->blocks as $block) {
+            match (true) {
+                $block instanceof ContentBlocks\Line    => $this->line($block->text),
+                $block instanceof ContentBlocks\Bullets => $this->bullets($block->items),
+                $block instanceof ContentBlocks\Facts   => $this->facts(array_map(self::factRow(...), $block->rows)),
+                $block instanceof ContentBlocks\Panel   => $this->panel($block->text),
+                $block instanceof ContentBlocks\Links   => $this->bullets(array_map(self::link(...), $block->links)),
+                $block instanceof ContentBlocks\Button  => $this->action($block->text, $block->url),
+                $block instanceof ContentBlocks\Code    => $this->panel($block->code),
+                // A block type newer than this release: its text, one line() each.
+                default => $this->lines($block->lines()),
+            };
+        }
+
+        return $this;
+    }
+
     /** @return array<string, mixed> */
     public function data(): array
     {
@@ -181,6 +218,17 @@ class Message extends MailMessage
         $end = self::POP_DIRECTIONAL_ISOLATE;
 
         return $start . preg_replace('/\r\n?|\n/', "{$end}\n{$start}", $text) . $end;
+    }
+
+    /** @return array{label: string, value: string} */
+    private static function factRow(ContentBlocks\Fact $fact): array
+    {
+        return ['label' => $fact->label, 'value' => $fact->value];
+    }
+
+    private static function link(ContentBlocks\Link $link): Htmlable
+    {
+        return new HtmlString('<a href="' . e($link->url) . '">' . e($link->text) . '</a>');
     }
 
     /** @phpstan-assert-if-true !null $value */
