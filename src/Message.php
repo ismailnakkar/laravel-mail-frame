@@ -183,13 +183,14 @@ class Message extends MailMessage
 
         foreach ($content->blocks as $block) {
             match (true) {
-                $block instanceof ContentBlocks\Line    => $this->line($block->text),
-                $block instanceof ContentBlocks\Bullets => $this->bullets($block->items),
-                $block instanceof ContentBlocks\Facts   => $this->facts(array_map(self::factRow(...), $block->rows)),
-                $block instanceof ContentBlocks\Panel   => $this->panel($block->text),
-                $block instanceof ContentBlocks\Links   => $this->bullets(array_map(self::link(...), $block->links)),
-                $block instanceof ContentBlocks\Button  => $this->action($block->text, $block->url),
-                $block instanceof ContentBlocks\Code    => $this->panel($block->code),
+                $block instanceof ContentBlocks\Line       => $this->line($block->text),
+                $block instanceof ContentBlocks\LinkedLine => $this->line(self::linkedLine($block)),
+                $block instanceof ContentBlocks\Bullets    => $this->bullets($block->items),
+                $block instanceof ContentBlocks\Facts      => $this->facts(array_map(self::factRow(...), $block->rows)),
+                $block instanceof ContentBlocks\Panel      => $this->panel($block->text),
+                $block instanceof ContentBlocks\Links      => $this->bullets(array_map(self::link(...), $block->links)),
+                $block instanceof ContentBlocks\Button     => $this->action($block->text, $block->url),
+                $block instanceof ContentBlocks\Code       => $this->panel($block->code),
                 // A block type newer than this release: its text, one line() each.
                 default => $this->lines($block->lines()),
             };
@@ -229,6 +230,12 @@ class Message extends MailMessage
     private static function link(ContentBlocks\Link $link): Htmlable
     {
         return new HtmlString('<a href="' . e($link->url) . '">' . e($link->text) . '</a>');
+    }
+
+    /** The sentence escaped, its link the one markup in it. */
+    private static function linkedLine(ContentBlocks\LinkedLine $line): Htmlable
+    {
+        return new HtmlString(e($line->before) . self::link($line->link)->toHtml() . e($line->after));
     }
 
     /** @phpstan-assert-if-true !null $value */

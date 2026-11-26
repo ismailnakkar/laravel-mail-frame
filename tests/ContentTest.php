@@ -13,6 +13,7 @@ use MailContent\Blocks\Fact;
 use MailContent\Blocks\Facts;
 use MailContent\Blocks\Line;
 use MailContent\Blocks\Link;
+use MailContent\Blocks\LinkedLine;
 use MailContent\Blocks\Links;
 use MailContent\Blocks\Panel;
 use MailContent\Content;
@@ -57,6 +58,20 @@ final class ContentTest extends TestCase
             '<a href="https://example.test/held?a=1&amp;b=&quot;2&quot;">&lt;b&gt;Held&lt;/b&gt; &amp; more</a>',
             (string)$message->blocks[0]->items[0],
         );
+    }
+
+    public function test_a_linked_line_is_one_paragraph_with_its_link_inside_and_only_the_link_is_markup(): void
+    {
+        $message = $this->message()->content($this->content([
+            new LinkedLine('If <b>not</b>, :link & now.', new Link('contact "us"', 'https://example.test/contact?a=1&b=2')),
+        ]));
+
+        $this->assertSame([BlockType::line], array_column($message->blocks, 'type'));
+        $this->assertStringContainsString(
+            '<p style="margin:0 0 16px;">If &lt;b&gt;not&lt;/b&gt;, <a href="https://example.test/contact?a=1&amp;b=2">contact &quot;us&quot;</a> &amp; now.</p>',
+            $this->html($message),
+        );
+        $this->assertStringContainsString('If <b>not</b>, contact "us" <https://example.test/contact?a=1&b=2> & now.', (string)$this->send($message)->getTextBody());
     }
 
     public function test_a_code_is_a_panel_in_the_neutral_tone(): void

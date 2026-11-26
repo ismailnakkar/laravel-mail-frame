@@ -136,9 +136,9 @@ final class SiteTemplate implements Template
 ```
 
 Name it in each package's `notifications.template` config. `content()` sets the subject and heading, the preheader and
-greeting when the content has them, then prints each block in order: a `Line` with `line()`, `Bullets` with
-`bullets()`, `Facts` with `facts()`, a `Panel` and a `Code` with `panel()`, `Links` as `bullets()` of links, and a
-`Button` with `action()`. A block type newer than this release prints its `lines()`, each with `line()`. It leaves the
+greeting when the content has them, then prints each block in order: a `Line` with `line()`, a `LinkedLine` with
+`line()` and its link inside the sentence (only the link is markup), `Bullets` with `bullets()`, `Facts` with
+`facts()`, a `Panel` and a `Code` with `panel()`, `Links` as `bullets()` of links, and a `Button` with `action()`. A block type newer than this release prints its `lines()`, each with `line()`. It leaves the
 tone alone, so set it as above. To word your own greeting, call `greeting()` after `content()`.
 
 ## Escaping
@@ -249,6 +249,12 @@ $this->assertSame('$40.00', array_column($mail->blocks[1]->rows, 'value', 'label
 ```
 
 ## Upgrading
+
+### From 0.7
+
+0.8 requires `ismailnakkar/laravel-mail-content` `^1.3`. Nothing else changes: `content()` prints a `LinkedLine` as one
+paragraph with its link inside it, where 0.7 printed its `lines()`, the link's text followed by its URL in angle
+brackets. The text part prints the link as `text <url>` in its place, as for any link.
 
 ### From 0.6
 
