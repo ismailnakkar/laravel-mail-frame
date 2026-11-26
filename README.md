@@ -137,9 +137,10 @@ final class SiteTemplate implements Template
 
 Name it in each package's `notifications.template` config. `content()` sets the subject and heading, the preheader and
 greeting when the content has them, then prints each block in order: a `Line` with `line()`, a `LinkedLine` with
-`line()` and its link inside the sentence (only the link is markup), `Bullets` with `bullets()`, `Facts` with
-`facts()`, a `Panel` and a `Code` with `panel()`, `Links` as `bullets()` of links, and a `Button` with `action()`. A block type newer than this release prints its `lines()`, each with `line()`. It leaves the
-tone alone, so set it as above. To word your own greeting, call `greeting()` after `content()`.
+`line()` and its link inside the sentence (only the link is markup), `Bullets` with `bullets()`, `Facts` with `facts()`,
+a `Panel` and a `Code` with `panel()`, `Links` as `bullets()` of links, and a `Button` with `action()`. A block type
+newer than this release prints its `lines()`, each with `line()`. It leaves the tone alone, so set it as above. To word
+your own greeting, call `greeting()` after `content()`.
 
 ## Escaping
 
